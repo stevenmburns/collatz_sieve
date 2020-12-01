@@ -4,7 +4,7 @@ def iteration( co):
     u = co.n
     while 1:
         if u % 2 == 1:
-            u = 3*u+1
+            u = (3*u+1)//2
         else:
             u = u//2
         steps += 1
@@ -44,18 +44,19 @@ class CollatzObject:
 
     def step(self):
         if self.stride_w % 2 == 1:
-            co0 = CollatzObject( self.stride*2, self.n,
-                                 self.stride_w*2, self.n_w,
-                                 self.steps)
-            co1 = CollatzObject( self.stride*2, self.n+self.stride,
-                                 self.stride_w*2, self.n_w+self.stride_w,
-                                 self.steps)
-            print( f"Spliting {self} into {co0} and {co1}")
-            return co0.step() + co1.step()
+            k = 1
+            kk = 1<<k
+            result = []
+            for i in range( kk):
+                result.append( CollatzObject( self.stride*kk, self.n+i*self.stride,
+                                         self.stride_w*kk, self.n_w+i*self.stride_w,
+                                         self.steps))
+            print( f"Spliting {self} into {result}")
+            return [ y for x in result for y in x.step()]
         else:
             self.steps += 1
             if self.n_w % 2 == 1:
-                self.stride_w, self.n_w = 3*self.stride_w, 3*self.n_w+1
+                self.stride_w, self.n_w = 3*self.stride_w//2, (3*self.n_w+1)//2
             else:
                 self.stride_w, self.n_w = self.stride_w//2, self.n_w//2
             return [self]
@@ -69,27 +70,12 @@ class CollatzObject:
 
 from collections import deque
 
-def breadth_first():
-    
+
+def depth_first():    
     q = deque()
 
-    q.append(CollatzObject(2,1))
-
-    iter = 0
-
-    while len(q) > 0 and iter < 100000:
-        co = q.popleft()
-        print( f"Iter: {iter} Count: {len(q)} Dequeuing {co}")
-        for x in co.protected_step():
-            q.append(x)
-            print( f"\tEnqueuing {x}")
-        iter += 1
-        
-def depth_first():
-    
-    q = deque()
-
-    q.append(CollatzObject(2,1))
+    q.append(CollatzObject(6,1))
+    q.append(CollatzObject(6,3))
 
     iter = 0
 
@@ -101,9 +87,66 @@ def depth_first():
             print( f"\tPushing {x}")
         iter += 1
         
+    for x in q:
+        print(f"\tPending {x}")
+    print( f"Items pending: {len(q)}")
+
+
+def breadth_first():    
+    q = deque()
+
+    q.append(CollatzObject(6,1))
+    q.append(CollatzObject(6,3))
+
+    iter = 0
+
+    while len(q) > 0 and iter < 10000000:
+        iter += 1
+        co = q.popleft()
+        print( f"Iter: {iter} Count: {len(q)} Dequeuing {co}")
+        lst = co.protected_step()
+        for x in lst:
+            q.append(x)
+            print( f"\tEnqueuing {x}")
+        
+    for x in q:
+        print(f"\tPending {x}")
+    print( f"Items pending: {len(q)}")
+
+import random
+
+def mixed_first():
+    
+    rnd = random.Random()
+
+    q = deque()
+
+    q.append(CollatzObject(6,1))
+    q.append(CollatzObject(6,3))
+
+    iter = 0
+
+    while len(q) > 0 and iter < 10000000:
+        coin = rnd.randrange(100)
+
+        if coin > 0:
+            co = q.pop()
+            tag = "Popping"
+        else:
+            co = q.popleft()
+            tag = "Dequeuing"
+        print( f"Iter: {iter} Count: {len(q)} {tag} {co}")
+        for x in co.protected_step():
+            q.append(x)
+            print( f"\tPushing {x}")
+        iter += 1
+        
 def test_A():
     breadth_first()
 
 def test_B():
     depth_first()
 
+def test_C():
+    mixed_first()
+    
